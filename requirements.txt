@@ -1,6 +1,3 @@
-
-# Requirements for Net-Hak TCP Port Scanner
-
 colorama==0.4.6
 dnspython==2.4.2
 requests==2.31.0
