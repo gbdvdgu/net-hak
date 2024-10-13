@@ -17,7 +17,7 @@ Net-Hak is a simple TCP port scanner that allows you to identify open ports on a
 ## Usage
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/net-hak.git
+   git clone https://github.com/gbdvdgu/net-hak.git
    cd net-hak
    ```
 
