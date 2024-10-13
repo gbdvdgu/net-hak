@@ -23,7 +23,7 @@ Net-Hak is a simple TCP port scanner that allows you to identify open ports on a
 
 2. **Run the script:**
    ```bash
-   python tcp_port_scanner.py
+   python3 net-hak.py
    ```
 
 3. **Enter the target IP address when prompted.**
