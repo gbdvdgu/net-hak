@@ -2,4 +2,5 @@ colorama==0.4.6
 dnspython==2.4.2
 requests==2.31.0
 shodan==1.31.0
+requests-file==1.5.1
 whois==0.99.3
