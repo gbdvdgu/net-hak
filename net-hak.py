@@ -3,10 +3,8 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from colorama import Fore, init
 
-# Initialize colorama for color output
 init(autoreset=True)
 
-# ASCII art for Net-Hak logo
 def print_nethak_logo():
     red = Fore.RED
     yellow = Fore.YELLOW
