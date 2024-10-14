@@ -8,7 +8,7 @@ init(autoreset=True)
 def print_nethak_logo():
     red = Fore.RED
     yellow = Fore.YELLOW
-    print(f'''{red}
+    print(rf'''{red}
 
 $$\   $$\            $$\     $$\   $$\           $$\       
 $$$\  $$ |           $$ |    $$ |  $$ |          $$ |      
