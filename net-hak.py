@@ -82,7 +82,7 @@ class TCPPortScanner:
 
 
 def main():
-    # Print Net-Hak logo before starting the scan
+    
     print_nethak_logo()
     
     target = input("Enter the target IP address or hostname to scan: ").strip()
