@@ -1,5 +1,5 @@
 # net-hak
-A Simple Network Scanning Script
+A Simple Python Network Scanning Script
 
 # Net-Hak - TCP Port Scanner
 
