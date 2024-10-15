@@ -1,5 +1,5 @@
 # net-hak
-Network Scanning Tool Script 
+A Simple Network Scanning Script
 
 # Net-Hak - TCP Port Scanner
 
