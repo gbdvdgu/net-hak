@@ -1,9 +1,12 @@
 import socket
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+from queue import Queue
+import re  
 from colorama import Fore, init
 
+
 init(autoreset=True)
+
 
 def print_nethak_logo():
     red = Fore.RED
@@ -23,87 +26,123 @@ $$ | \$$ |\$$$$$$$\  \$$$$  |$$ |  $$ |\$$$$$$$ |$$ | \$$\
                             MadeBy: Harsh Pratap Singh
 ''')
 
-class TCPPortScanner:
-    def __init__(self, target, start_port=1, end_port=1024, max_threads=100, timeout=1):
-        self.target = target
-        self.start_port = start_port
-        self.end_port = end_port
-        self.max_threads = max_threads
-        self.timeout = timeout
-        self.open_ports = []
 
-    def scan_port(self, port):
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(self.timeout)
-            result = sock.connect_ex((self.target, port))
-            sock.close()
-            if result == 0:
-                return port
-        except socket.error as e:
-            print(f"Error scanning port {port}: {e}")
-        except KeyboardInterrupt:
-            print("\nUser interrupted the scan.")
-            exit(1)
-        return None
-
-    def run(self):
-        print(f"Starting scan on {self.target} from port {self.start_port} to {self.end_port}...\n")
-        start_time = datetime.now()
-
-        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            futures = {executor.submit(self.scan_port, port): port for port in range(self.start_port, self.end_port + 1)}
-
-            for future in as_completed(futures):
-                port = futures[future]
-                if future.result() is not None:
-                    self.open_ports.append(port)
-                    print(f"Port {port} is open on {self.target}.")
-
-        end_time = datetime.now()
-        total_time = (end_time - start_time).total_seconds()
-
-        self.display_results(total_time)
-
-    def display_results(self, total_time):
-        print("\nScan completed!\n")
-        if self.open_ports:
-            print(f"Open ports on {self.target}:")
-            for port in sorted(self.open_ports):
-                service = self.get_service_name(port)
-                print(f"Port {port}: Open ({service})")
-        else:
-            print(f"No open ports found on {self.target} in the range {self.start_port}-{self.end_port}.")
-        print(f"\nScan completed in {total_time:.2f} seconds.")
-
-    @staticmethod
-    def get_service_name(port):
-        try:
-            return socket.getservbyport(port)
-        except:
-            return "Unknown Service"
+port_services = {
+    21: "FTP",
+    22: "SSH",
+    23: "Telnet",
+    25: "SMTP",
+    53: "DNS",
+    80: "HTTP",
+    110: "POP3",
+    111: "RPC",  
+    143: "IMAP",
+    443: "HTTPS",
+    3306: "MySQL",
+    3389: "RDP",
+    5900: "VNC",
+    8080: "HTTP Proxy",
+    
+}
 
 
-def main():
+queue = Queue()
+
+
+def scan_port(ip, port, scan_type, timeout):
+    try:
+        if scan_type == 'TCP':
+            
+            tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            tcp_sock.settimeout(timeout)
+            result_tcp = tcp_sock.connect_ex((ip, port))
+            if result_tcp == 0:
+               
+                try:
+                    tcp_sock.send(b'Hello\r\n')
+                    banner = tcp_sock.recv(1024).decode('utf-8').strip()
+
+                    
+                    if re.search(r'<html>', banner, re.IGNORECASE):
+                        banner = "HTML Response Truncated"
+
+                except socket.timeout:
+                    banner = 'No Banner'
+                except socket.error:
+                    banner = 'Error retrieving banner'
+
+                
+                service = port_services.get(port, "Unknown Service")
+                print(f"Port {port}/TCP is open - {service} | Banner: {banner}")
+            tcp_sock.close()
+
+        elif scan_type == 'SYN':
+            
+            syn_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            syn_sock.settimeout(timeout)
+            result_syn = syn_sock.connect_ex((ip, port))
+            if result_syn == 0:
+                service = port_services.get(port, "Unknown Service")
+                print(f"Port {port}/SYN is open - {service}")
+            syn_sock.close()
+
+    except Exception as e:
+        pass
+
+
+def thread_worker(ip, scan_type, timeout):
+    while not queue.empty():
+        port = queue.get()
+        scan_port(ip, port, scan_type, timeout)
+        queue.task_done()
+
+def start_scanning(ip, start_port, end_port, scan_type, threads, timeout):
+    print(f"Starting {scan_type} scan on {ip} from port {start_port} to {end_port}")
+
+    
+    for port in range(start_port, end_port + 1):
+        queue.put(port)
+
+    
+    for _ in range(threads):
+        thread = threading.Thread(target=thread_worker, args=(ip, scan_type, timeout))
+        thread.daemon = True  
+        thread.start()
+
+    queue.join()  
+    print("Scan complete!")
+
+
+def get_user_input():
+    ip = input("Enter IP address to scan: ")
+
+    
+    start_port = input("Enter start port [default 1]: ").strip() or 1
+    end_port = input("Enter end port [default 65535]: ").strip() or 65535
+
+    
+    start_port = int(start_port)
+    end_port = int(end_port)
+
+    
+    threads = input("Enter number of threads [default 200]: ").strip() or 200
+    threads = int(threads)
+
+    
+    timeout = input("Enter timeout in seconds [default 1]: ").strip() or 1
+    timeout = float(timeout)
+
+    
+    scan_type = input("Choose scan type (TCP/SYN): ").strip().upper()
+    if scan_type not in ['TCP', 'SYN']:
+        print("Invalid scan type, defaulting to TCP.")
+        scan_type = 'TCP'
+
+    return ip, start_port, end_port, scan_type, threads, timeout
+
+
+if __name__ == "__main__":
     
     print_nethak_logo()
-    
-    target = input("Enter the target IP address or hostname to scan: ").strip()
-
-    try:
-        target_ip = socket.gethostbyname(target)
-    except socket.gaierror:
-        print(f"Error resolving the hostname: {target}")
-        return
-
-    start_port = int(input("Enter the start port (default 1): ") or 1)
-    end_port = int(input("Enter the end port (default 1024): ") or 1024)
-    max_threads = int(input("Enter the number of threads (default 200): ") or 200)
-    timeout = float(input("Enter the timeout in seconds (default 1): ") or 1)
-
-    scanner = TCPPortScanner(target=target_ip, start_port=start_port, end_port=end_port, max_threads=max_threads, timeout=timeout)
-    scanner.run()
-
-
-if __name__ == '__main__':
-    main()
+    ip, start_port, end_port, scan_type, threads, timeout = get_user_input()
+    start_scanning(ip, start_port, end_port, scan_type, threads, timeout)
